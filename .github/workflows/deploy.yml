@@ -96,5 +96,9 @@ jobs:
           # Update OWNER placeholder in manifests with lowercase version
           OWNER_LC=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           sed -i "s/OWNER/$OWNER_LC/g" *.yaml
+          # Cleanup any stale deployments in default namespace to avoid confusion
+          kubectl delete deployment memocare-backend memocare-frontend -n default --ignore-not-found
+          kubectl delete service memocare-backend memocare-frontend -n default --ignore-not-found
+          
           kubectl apply -f .
 

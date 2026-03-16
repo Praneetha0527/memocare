@@ -32,7 +32,7 @@ metadata:
   name: memocare-frontend
   namespace: memocare
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
     app: memocare-frontend
   ports:
