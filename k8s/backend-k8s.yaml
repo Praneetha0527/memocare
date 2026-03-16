@@ -30,6 +30,11 @@ spec:
             secretKeyRef:
               name: memocare-secrets
               key: MONGO_URI
+        - name: FRONTEND_URL
+          valueFrom:
+            secretKeyRef:
+              name: memocare-secrets
+              key: FRONTEND_URL
 ---
 apiVersion: v1
 kind: Service

@@ -2,7 +2,7 @@ import { useState } from "react";
 import TaskList from "../components/daily-tasks/TaskList";
 import MedicationTracker from "../components/daily-tasks/MedicationTracker";
 import RoutinePlanner from "../components/daily-tasks/RoutinePlanner";
- // Assuming you have a CSS file for styling
+import "./dailytasks.css"; 
 
 const DailyTasks = () => {
   const [activeTab, setActiveTab] = useState("tasks");
