@@ -12,7 +12,7 @@ function App() {
   
 useEffect(() => {
   axios
-    .get("http://localhost:5000/api/test")
+    .get(`${import.meta.env.VITE_API_URL || "http://localhost:5000/api"}/test`)
     .then((res) => console.log(res.data))
     .catch((err) => console.error(err));
 }, []);

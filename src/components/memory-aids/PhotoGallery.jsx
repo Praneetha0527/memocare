@@ -12,7 +12,8 @@ const PhotoGallery = () => {
   useEffect(() => {
     const fetchPhotos = async () => {
       try {
-        const res = await axios.get("http://localhost:5000/api/photos");
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+        const res = await axios.get(`${API_URL}/photos`);
         setPhotos(res.data); // assuming response is an array of photos
       } catch (err) {
         console.error("Error fetching photos:", err);
@@ -39,7 +40,8 @@ const PhotoGallery = () => {
   const addPhoto = async () => {
     if (newPhoto) {
       try {
-        const res = await axios.post("http://localhost:5000/api/photos", {
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+        const res = await axios.post(`${API_URL}/photos`, {
           name: newPhoto.name,
           imageData: newPhoto.url,
         });

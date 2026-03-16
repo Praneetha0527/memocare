@@ -11,7 +11,9 @@ const ReminderList = () => {
   useEffect(() => {
     const fetchReminders = async () => {
       try {
-        const res = await axios.get("http://localhost:5000/api/reminders");
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+        const res = await axios.get(`${API_URL}/reminders`);
+
         setReminders(res.data);
       } catch (err) {
         console.error("Error fetching reminders:", err);
@@ -24,7 +26,8 @@ const ReminderList = () => {
   const addReminder = async () => {
     if (newReminder.trim() && newTime) {
       try {
-        const res = await axios.post("http://localhost:5000/api/reminders", {
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+        const res = await axios.post(`${API_URL}/reminders`, {
           text: newReminder,
           time: newTime,
         });
@@ -39,8 +42,10 @@ const ReminderList = () => {
 
   const toggleReminder = async (id, currentStatus) => {
     try {
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
       const res = await axios.patch(
-        `http://localhost:5000/api/reminders/${id}`,
+        `${API_URL}/reminders/${id}`,
+
         {
           active: !currentStatus,
         }
@@ -55,7 +60,8 @@ const ReminderList = () => {
 
   const deleteReminder = async (id) => {
     try {
-      await axios.delete(`http://localhost:5000/api/reminders/${id}`);
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+      await axios.delete(`${API_URL}/reminders/${id}`);
       setReminders(reminders.filter((reminder) => reminder._id !== id));
     } catch (err) {
       console.error("Error deleting reminder:", err);

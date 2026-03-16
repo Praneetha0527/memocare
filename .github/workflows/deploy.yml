@@ -1,0 +1,87 @@
+name: Deploy to EC2 with k3s
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build and push Backend image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./backend
+        push: true
+        tags: ghcr.io/${{ github.repository_owner }}/memocare-backend:latest
+
+    - name: Build and push Frontend image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: true
+        tags: ghcr.io/${{ github.repository_owner }}/memocare-frontend:latest
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Deploy to EC2 via SSH
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USERNAME }}
+        key: ${{ secrets.EC2_PEM_KEY }}
+        script: |
+          # Create namespace and secrets if they don't exist
+          kubectl create namespace memocare --dry-run=client -o yaml | kubectl apply -f -
+          kubectl create secret generic memocare-secrets --from-literal=MONGO_URI="${{ secrets.MONGO_URI }}" -n memocare --dry-run=client -o yaml | kubectl apply -f -
+          
+          # Pull latest images (optional, kubectl rollout will do it if imagePullPolicy is Always)
+          # Apply manifests
+          # Note: We need to copy the manifests to the server first or use a method to pipe them
+          # For simplicity in this script, we assume manifests are available or we use a different approach.
+          # Better: use a tool like 'envsubst' or just 'kubectl apply' from the repo if using a different action.
+          
+    - name: Setup Manifests and Apply
+      run: |
+        # This is a bit complex via appleboy/ssh-action without SCP. 
+        # Using appleboy/scp-action to copy manifests first.
+        
+    - name: SCP files to EC2
+      uses: appleboy/scp-action@master
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USERNAME }}
+        key: ${{ secrets.EC2_PEM_KEY }}
+        source: "k8s/*"
+        target: "~/memocare-deploy"
+
+    - name: Final Deploy command
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USERNAME }}
+        key: ${{ secrets.EC2_PEM_KEY }}
+        script: |
+          cd ~/memocare-deploy/k8s
+          # Update OWNER placeholder in manifests
+          sed -i "s/OWNER/${{ github.repository_owner }}/g" *.yaml
+          kubectl apply -f .

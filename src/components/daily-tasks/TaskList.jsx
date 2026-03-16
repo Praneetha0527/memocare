@@ -17,7 +17,7 @@ const TaskList = () => {
   const [editingId, setEditingId] = useState(null);
   const [editText, setEditText] = useState("");
 
-  const API_BASE_URL = "http://localhost:5000";
+  const API_BASE_URL = (import.meta.env.VITE_API_URL || "http://localhost:5000/api").replace("/api", "");
 
   // Fetch tasks from backend
   const fetchTasks = async () => {

@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: memocare-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: memocare-frontend
+  template:
+    metadata:
+      labels:
+        app: memocare-frontend
+    spec:
+      containers:
+      - name: frontend
+        image: ghcr.io/OWNER/memocare-frontend:latest
+        resources:
+          requests:
+            cpu: "50m"
+            memory: "64Mi"
+          limits:
+            cpu: "100m"
+            memory: "128Mi"
+        ports:
+        - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: memocare-frontend
+spec:
+  type: LoadBalancer
+  selector:
+    app: memocare-frontend
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
