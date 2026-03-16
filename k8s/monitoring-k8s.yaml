@@ -57,6 +57,10 @@ data:
       scrape_interval: 15s
     scrape_configs:
       - job_name: 'kubernetes-nodes'
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
         kubernetes_sd_configs:
         - role: node
         relabel_configs:
@@ -69,6 +73,10 @@ data:
           target_label: __metrics_path__
           replacement: /api/v1/nodes/${1}/proxy/metrics
       - job_name: 'kubernetes-cadvisor'
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
         kubernetes_sd_configs:
         - role: node
         relabel_configs:
@@ -97,11 +105,8 @@ data:
           regex: ([^:]+)(?::\d+)?;(\d+)
           replacement: $1:$2
       - job_name: 'node-exporter'
-        kubernetes_sd_configs:
-        - role: endpoints
-        relabel_configs:
-        - source_labels: [__meta_kubernetes_endpoint_node_name]
-          target_label: node
+        static_configs:
+          - targets: ['node-exporter.monitoring.svc.cluster.local:9100']
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -169,11 +174,13 @@ metadata:
   name: prometheus
   namespace: monitoring
 spec:
+  type: NodePort
   selector:
     app: prometheus
   ports:
   - port: 9090
     targetPort: 9090
+    nodePort: 30090
 ---
 apiVersion: apps/v1
 kind: DaemonSet
