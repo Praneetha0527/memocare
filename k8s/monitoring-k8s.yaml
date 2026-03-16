@@ -60,6 +60,7 @@ data:
         scheme: https
         tls_config:
           ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+          insecure_skip_verify: true
         bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
         kubernetes_sd_configs:
         - role: node
@@ -106,9 +107,19 @@ data:
           regex: ([^:]+)(?::\d+)?;(\d+)
           replacement: $1:$2
       - job_name: 'node-exporter'
-        static_configs:
-          - targets: ['node-exporter.monitoring.svc.cluster.local:9100']
+        kubernetes_sd_configs:
+          - role: endpoints
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_service_name]
+            action: keep
+            regex: node-exporter
 ---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: prometheus
+  namespace: monitoring
+ ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
