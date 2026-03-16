@@ -6,7 +6,7 @@ const photoSchema = new mongoose.Schema({
     required: true,
   },
   imageData: {
-    type: String, // base64 image string
+    type: String,
     required: true,
   },
   uploadedAt: {
