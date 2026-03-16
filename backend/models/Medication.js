@@ -29,7 +29,7 @@ const medicationSchema = new mongoose.Schema({
   },
 });
 
-// Update the updatedAt field before saving
+
 medicationSchema.pre("save", function (next) {
   this.updatedAt = Date.now();
   next();
