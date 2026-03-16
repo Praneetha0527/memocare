@@ -96,5 +96,5 @@ jobs:
           # Update OWNER placeholder in manifests with lowercase version
           OWNER_LC=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           sed -i "s/OWNER/$OWNER_LC/g" *.yaml
-          kubectl apply -f .
+          kubectl apply -f . -n memocare
 

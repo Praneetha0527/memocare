@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: memocare-frontend
+  namespace: memocare
 spec:
   replicas: 1
   selector:
@@ -29,6 +30,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: memocare-frontend
+  namespace: memocare
 spec:
   type: LoadBalancer
   selector:
@@ -37,3 +39,22 @@ spec:
   - protocol: TCP
     port: 80
     targetPort: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: memocare-ingress
+  namespace: memocare
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: memocare-frontend
+            port:
+              number: 80
