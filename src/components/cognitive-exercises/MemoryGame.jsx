@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import React from "react";
-import "./memoryGame.css"; // Assuming you have a CSS file for styling
+import "./memorygame.css"; // Assuming you have a CSS file for styling
 const MemoryGame = () => {
   const [cards, setCards] = useState([]);
   const [flipped, setFlipped] = useState([]);
