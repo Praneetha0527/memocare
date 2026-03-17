@@ -55,6 +55,13 @@ data:
   prometheus.yml: |
     global:
       scrape_interval: 15s
+      evaluation_interval: 15s
+    alerting:
+      alertmanagers:
+      - static_configs:
+        - targets: ['alertmanager.monitoring.svc:9093']
+    rule_files:
+      - /etc/prometheus/rules/memocare-alerts.yml
     scrape_configs:
       - job_name: 'kubernetes-nodes'
         scheme: https
@@ -167,6 +174,8 @@ spec:
         volumeMounts:
         - name: config-volume
           mountPath: /etc/prometheus/
+        - name: rules-volume
+          mountPath: /etc/prometheus/rules
         ports:
         - containerPort: 9090
         resources:
@@ -180,6 +189,9 @@ spec:
       - name: config-volume
         configMap:
           name: prometheus-config
+      - name: rules-volume
+        configMap:
+          name: memocare-alert-rules
 ---
 apiVersion: v1
 kind: Service
@@ -194,6 +206,102 @@ spec:
   - port: 9090
     targetPort: 9090
     nodePort: 30090
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: memocare-alert-rules
+  namespace: monitoring
+data:
+  memocare-alerts.yml: |
+    groups:
+      - name: memocare.rules
+        rules:
+          - alert: MemocareHighCpu
+            expr: sum(rate(container_cpu_usage_seconds_total{container!="",pod!=""}[5m])) by (namespace) * 100 > 80
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High CPU usage in namespace {{ $labels.namespace }}"
+              description: "CPU usage is {{ $value }}% for 5 minutes"
+          - alert: MemocareHigh5xxRate
+            expr: sum(rate(http_requests_total{code=~"5.."}[5m])) by (job) > 0.05
+            for: 10m
+            labels:
+              severity: critical
+            annotations:
+              summary: "High HTTP 5xx error rate on job {{ $labels.job }}"
+              description: "5xx rate is {{ $value }} req/s for 10 minutes"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alertmanager
+  namespace: monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: alertmanager
+  template:
+    metadata:
+      labels:
+        app: alertmanager
+    spec:
+      containers:
+      - name: alertmanager
+        image: prom/alertmanager:latest
+        args:
+          - "--config.file=/etc/alertmanager/config.yml"
+        volumeMounts:
+          - name: config-volume
+            mountPath: /etc/alertmanager/
+        ports:
+          - containerPort: 9093
+      volumes:
+        - name: config-volume
+          configMap:
+            name: alertmanager-config
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alertmanager-config
+  namespace: monitoring
+data:
+  config.yml: |
+    global:
+      resolve_timeout: 5m
+    route:
+      receiver: default
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 1h
+    receivers:
+      - name: default
+        email_configs:
+          - to: "you@example.com"
+            from: "alertmanager@example.com"
+            smarthost: "smtp.example.com:587"
+            auth_username: "alertmanager@example.com"
+            auth_identity: "alertmanager@example.com"
+            auth_password: "password"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: alertmanager
+  namespace: monitoring
+spec:
+  type: ClusterIP
+  selector:
+    app: alertmanager
+  ports:
+  - port: 9093
+    targetPort: 9093
 ---
 apiVersion: apps/v1
 kind: DaemonSet
