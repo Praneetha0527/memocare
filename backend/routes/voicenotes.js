@@ -2,7 +2,6 @@ const express = require("express");
 const router = express.Router();
 const VoiceNote = require("../models/VoiceNote");
 
-// GET all notes
 router.get("/", async (req, res) => {
   try {
     const notes = await VoiceNote.find().sort({ date: -1 });
