@@ -25,13 +25,13 @@ spec:
         env:
         - name: GF_SECURITY_ADMIN_PASSWORD
           value: admin
-          - name: GF_PATHS_PROVISIONING
-            value: /etc/grafana/provisioning
-          - name: GF_SERVER_ROOT_URL
-            # This will be replaced during deployment with the GitHub secret EC2_HOST
-            value: "REPLACE_GRAFANA_URL"
-          - name: GF_SERVER_DOMAIN
-            value: "REPLACE_GRAFANA_HOST"
+        - name: GF_PATHS_PROVISIONING
+          value: /etc/grafana/provisioning
+        - name: GF_SERVER_ROOT_URL
+          # This will be replaced during deployment with the GitHub secret EC2_HOST
+          value: "REPLACE_GRAFANA_URL"
+        - name: GF_SERVER_DOMAIN
+          value: "REPLACE_GRAFANA_HOST"
         resources:
           requests:
             cpu: "100m"
