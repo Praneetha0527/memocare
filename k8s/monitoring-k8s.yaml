@@ -22,6 +22,11 @@ spec:
       containers:
       - name: grafana
         image: grafana/grafana:latest
+        env:
+        - name: GF_SECURITY_ADMIN_PASSWORD
+          value: admin
+        - name: GF_PATHS_PROVISIONING
+          value: /etc/grafana/provisioning
         resources:
           requests:
             cpu: "100m"
@@ -32,24 +37,19 @@ spec:
         ports:
         - containerPort: 3000
         volumeMounts:
-        - name: grafana-provisioning
+        - name: grafana-datasources
           mountPath: /etc/grafana/provisioning/datasources
-          subPath: datasources
-        - name: grafana-provisioning-dash
+        - name: grafana-dashboards-config
           mountPath: /etc/grafana/provisioning/dashboards
-          subPath: dashboards
         - name: grafana-dashboards
-          mountPath: /etc/grafana/provisioning/dashboards/memocare
+          mountPath: /var/lib/grafana/dashboards
       volumes:
-      - name: grafana-provisioning
+      - name: grafana-datasources
         configMap:
-          name: grafana-provisioning
-      - name: grafana-provisioning-dash
+          name: grafana-datasources
+      - name: grafana-dashboards-config
         configMap:
-          name: grafana-provisioning
-          items:
-            - key: dashboards.yaml
-              path: dashboards.yaml
+          name: grafana-dashboards-config
       - name: grafana-dashboards
         configMap:
           name: grafana-dashboards
@@ -67,6 +67,40 @@ spec:
   - port: 3000
     targetPort: 3000
     nodePort: 32000
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-datasources
+  namespace: monitoring
+data:
+  datasources.yaml: |
+    apiVersion: 1
+    datasources:
+      - name: prometheus
+        type: prometheus
+        access: proxy
+        url: http://prometheus:9090
+        isDefault: true
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards-config
+  namespace: monitoring
+data:
+  dashboards.yaml: |
+    apiVersion: 1
+    providers:
+      - name: 'Memocare'
+        orgId: 1
+        folder: 'Memocare'
+        type: file
+        disableDeletion: false
+        updateIntervalSeconds: 10
+        allowUiUpdates: true
+        options:
+          path: /var/lib/grafana/dashboards
 ---
 apiVersion: v1
 kind: ConfigMap
