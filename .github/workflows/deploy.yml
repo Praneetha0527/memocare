@@ -99,6 +99,11 @@ jobs:
           # Update OWNER placeholder in manifests with lowercase version
           OWNER_LC=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           sed -i "s/OWNER/$OWNER_LC/g" *.yaml
+          # Replace Grafana URL and host placeholders with EC2 host from secrets
+          GRAFANA_URL="http://${{ secrets.EC2_HOST }}:32000"
+          GRAFANA_HOST="${{ secrets.EC2_HOST }}"
+          sed -i "s|REPLACE_GRAFANA_URL|$GRAFANA_URL|g" *.yaml || true
+          sed -i "s|REPLACE_GRAFANA_HOST|$GRAFANA_HOST|g" *.yaml || true
           # Cleanup any stale deployments in default namespace to avoid confusion
           sudo kubectl delete deployment memocare-backend memocare-frontend -n default --ignore-not-found
           sudo kubectl delete service memocare-backend memocare-frontend -n default --ignore-not-found
