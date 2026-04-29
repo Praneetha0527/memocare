@@ -51,30 +51,32 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Deploy to EC2 via SSH
+    - name: Install k3s and Deploy
       uses: appleboy/ssh-action@master
       with:
         host: ${{ secrets.EC2_HOST }}
         username: ${{ secrets.EC2_USERNAME }}
         key: ${{ secrets.EC2_PEM_KEY }}
         script: |
+          # Install k3s if not already installed
+          if ! command -v kubectl &> /dev/null; then
+            echo "Installing k3s..."
+            curl -sfL https://get.k3s.io | sh -
+            # Wait for k3s to be ready
+            sleep 10
+            export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+            sudo chmod 644 /etc/rancher/k3s/k3s.yaml
+          fi
+          
+          # Set KUBECONFIG for the current session
+          export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+          
           # Create namespace and secrets if they don't exist
-          kubectl create namespace memocare --dry-run=client -o yaml | kubectl apply -f -
-          kubectl create secret generic memocare-secrets \
+          sudo kubectl create namespace memocare --dry-run=client -o yaml | sudo kubectl apply -f -
+          sudo kubectl create secret generic memocare-secrets \
             --from-literal=MONGO_URI="${{ secrets.MONGO_URI }}" \
             --from-literal=FRONTEND_URL="http://${{ secrets.EC2_HOST }}" \
-            -n memocare --dry-run=client -o yaml | kubectl apply -f -
-          
-          # Pull latest images (optional, kubectl rollout will do it if imagePullPolicy is Always)
-          # Apply manifests
-          # Note: We need to copy the manifests to the server first or use a method to pipe them
-          # For simplicity in this script, we assume manifests are available or we use a different approach.
-          # Better: use a tool like 'envsubst' or just 'kubectl apply' from the repo if using a different action.
-          
-    - name: Setup Manifests and Apply
-      run: |
-        # This is a bit complex via appleboy/ssh-action without SCP. 
-        # Using appleboy/scp-action to copy manifests first.
+            -n memocare --dry-run=client -o yaml | sudo kubectl apply -f -
         
     - name: SCP files to EC2
       uses: appleboy/scp-action@master
@@ -92,13 +94,14 @@ jobs:
         username: ${{ secrets.EC2_USERNAME }}
         key: ${{ secrets.EC2_PEM_KEY }}
         script: |
+          export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
           cd ~/memocare-deploy/k8s
           # Update OWNER placeholder in manifests with lowercase version
           OWNER_LC=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           sed -i "s/OWNER/$OWNER_LC/g" *.yaml
           # Cleanup any stale deployments in default namespace to avoid confusion
-          kubectl delete deployment memocare-backend memocare-frontend -n default --ignore-not-found
-          kubectl delete service memocare-backend memocare-frontend -n default --ignore-not-found
+          sudo kubectl delete deployment memocare-backend memocare-frontend -n default --ignore-not-found
+          sudo kubectl delete service memocare-backend memocare-frontend -n default --ignore-not-found
           
-          kubectl apply -f .
+          sudo kubectl apply -f .
 
